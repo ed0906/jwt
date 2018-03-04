@@ -1,0 +1,65 @@
+apply plugin: 'java'
+apply plugin: 'maven'
+
+sourceCompatibility = 1.8
+targetCompatibility = '1.8'
+
+def VERSION = '1.0.0'
+def GROUP = 'ifusion'
+def NAME = 'jwt'
+
+repositories {
+	mavenCentral()
+
+    maven {
+        url "http://nexus.fusing-ideas.com/content/groups/public/"
+    }
+}
+
+dependencies {
+    compile 'org.apache.commons:commons-lang3:3.3.2'
+    compile 'commons-codec:commons-codec:1.10'
+    compile 'com.fasterxml.jackson.core:jackson-databind:2.7.3'
+	compile 'org.slf4j:slf4j-log4j12:1.7.12'
+
+    testCompile group: 'junit', name: 'junit', version: '4.11'
+    testCompile 'org.hamcrest:hamcrest-all:1.3'
+    testCompile 'org.mockito:mockito-all:1.10.19'
+    testCompile 'org.assertj:assertj-core:3.2.0'
+}
+
+task wrapper(type: Wrapper) {
+	gradleVersion = '2.7' //version required
+}
+
+buildDir = './clientBuild'
+
+task clientJar(type: Jar) {
+	baseName = NAME
+	dependsOn classes
+	from sourceSets.main.output
+	include('ifusion/core/**/*')
+}
+
+artifacts {
+	archives clientJar
+}
+
+uploadArchives {
+	repositories {
+		mavenDeployer {
+			repository(url: "http://nexus.fusing-ideas.com/content/repositories/releases/") {
+				authentication(userName: REPOSITORY_USER, password: REPOSITORY_PWD)
+			}
+			addFilter('clientJar') {artifact, file -> artifact.name == NAME}
+			pom('clientJar') {
+				version = VERSION
+				artifactId = NAME
+				groupId = GROUP
+			}
+		}
+	}
+}
+
+uploadArchives.dependsOn clientJar
+
